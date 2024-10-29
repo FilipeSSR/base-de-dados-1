@@ -1,2 +1,164 @@
-# Auto detect text files and perform LF normalization
-* text=auto
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+file_path = "C:\\Users\\filip\\OneDrive\\Desktop\\progamas\\base de dados\\P_Data_Extract_From_World_Development_Indicators\\34d84a21-02f9-4b63-b5f6-ed1f74507a71_Data.csv"
+df = pd.read_csv(file_path)
+
+print(df.head())
+
+df.info()
+
+print(df.columns)
+
+df.describe()
+
+tipos_unicos = df['Series Name'].unique()
+print(tipos_unicos)
+
+
+contagem = df['Series Name'].value_counts()
+print(contagem)
+
+df=df.drop(columns=['Country Code'])
+df=df.drop(columns=['Series Code'])
+df=df.drop(columns=['2022 [YR2022]'])
+df=df.drop(columns=['2023 [YR2023]'])
+
+df.describe()
+
+#
+num=len(df)
+print(num)
+
+df.info()
+
+#verifica se tem valores faltantes
+print(df.isnull().sum())
+
+anos_validos = ['1990 [YR1990]', '2000 [YR2000]', '2014 [YR2014]',
+                '2015 [YR2015]', '2016 [YR2016]', '2017 [YR2017]',
+                '2018 [YR2018]', '2019 [YR2019]', '2020 [YR2020]',
+                '2021 [YR2021]']
+for coluna in anos_validos:
+    df[coluna] = pd.to_numeric(df[coluna], errors='coerce')
+   
+
+print(df[anos_validos].info())
+print(df[anos_validos].isnull().sum())
+
+anos = ['1990', '2000', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021']
+valores = [df['1990 [YR1990]'].mean(), df['2000 [YR2000]'].mean(), df['2014 [YR2014]'].mean(),
+           df['2015 [YR2015]'].mean(), df['2016 [YR2016]'].mean(), df['2017 [YR2017]'].mean(),
+           df['2018 [YR2018]'].mean(), df['2019 [YR2019]'].mean(), df['2020 [YR2020]'].mean(),
+           df['2021 [YR2021]'].mean()]
+
+
+plt.plot(anos, valores, marker='o')
+plt.title('Média dos Valores ao Longo dos Anos')
+plt.xlabel('Ano')
+plt.ylabel('Média dos Valores')
+plt.grid()
+plt.show()
+
+df.describe()
+
+df.info()
+
+
+
+numerical_cols = df.select_dtypes(include='float64')
+print(numerical_cols.columns)  # Verificar quais colunas são numéricas
+
+correlation_matrix = numerical_cols.corr()
+
+plt.figure(figsize=(10,10))
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
+plt.title('Mapa de Calor das Correlações entre Anos')
+plt.show()
+
+limite = 0.5  # Defina seu limite
+correlacoes_altas = correlation_matrix[(correlation_matrix > limite) | (correlation_matrix < -limite)]
+print(correlacoes_altas)
+
+df.columns = df.columns.str.replace(' [YR', '_', regex=False).str.replace(']', '', regex=False)
+
+
+#Selecionando as colunas dos anos
+years = df.columns[2:]  # Ajuste se necessário
+
+
+#Convertendo as colunas dos anos para tipo numérico (se ainda não tiver feito)
+df[years] = df[years].apply(pd.to_numeric, errors='coerce')
+
+
+#Calculando a soma total de todos os anos para cada país
+df['Total'] = df[years].sum(axis=1)
+
+
+#Selecionando os 5 maiores países baseados na soma total
+top_countries = df.nlargest(5, 'Total')
+
+
+plt.figure(figsize=(12, 6))
+
+
+#Plotando apenas os países selecionados
+for country in top_countries['Country Name']:
+    country_data = df[df['Country Name'] == country][years].T
+    plt.plot(country_data.index, country_data.values, marker='o', label=country)
+
+
+plt.title('Tendência dos 5 Maiores Países ao Longo dos Anos (Soma Total)')
+plt.xlabel('Ano')
+plt.ylabel('Valor')
+plt.xticks(rotation=45)
+
+
+#adicionando a legenda apenas para os países plotados
+plt.legend(top_countries['Country Name'].tolist())
+plt.grid()
+plt.show()
+
+#Supondo que você já tenha carregado seu DataFrame df
+#Ajustando os nomes das colunas
+df.columns = df.columns.str.replace(' [YR', '_', regex=False).str.replace(']', '', regex=False)
+
+
+#Selecionando as colunas dos anos
+years = df.columns[2:]  # Ajuste se necessário
+
+
+#Convertendo as colunas dos anos para tipo numérico (se ainda não tiver feito)
+df[years] = df[years].apply(pd.to_numeric, errors='coerce')
+
+
+#Calculando a soma total de todos os anos para cada país
+df['Total'] = df[years].sum(axis=1)
+
+
+#Selecionando os 5 maiores países baseados na soma total
+top_countries = df[df['Country Name'].notnull()].nlargest(5, 'Total')
+
+
+plt.figure(figsize=(12, 6))
+
+
+#Plotando apenas os países selecionados
+for country in top_countries['Country Name']:
+    country_data = df[df['Country Name'] == country][years].T
+    plt.plot(country_data.index, country_data.values, marker='o')
+
+
+#Adicionando a legenda apenas para os países plotados
+plt.title('Tendência dos 5 Maiores Países ao Longo dos Anos (Soma Total)')
+plt.xlabel('Ano')
+plt.ylabel('Valor')
+plt.xticks(rotation=45)
+
+
+#Apenas os países plotados
+plt.legend(top_countries['Country Name'].tolist())
+plt.grid()
+plt.show()
+
